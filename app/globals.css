@@ -90,3 +90,10 @@ footer{padding:50px 24px 70px;color:var(--muted);font-size:13px}
 .warn{border:1px solid #b3402f;color:#b3402f;padding:12px 14px;font-size:13px;margin-bottom:20px}
 .login{max-width:360px;margin:0 auto;display:grid;gap:16px}
 .empty{text-align:center;color:var(--muted);padding:40px 0}
+.confirm{text-align:center;padding:28px 22px;border:1px solid var(--line);background:var(--bg2);animation:cf .6s ease both}
+.confirm .orn{margin:0 0 14px}
+.confirm h3{font-size:30px;font-weight:400;font-style:italic;color:var(--gold);margin:0 0 12px}
+.confirm p{margin:0 0 8px;color:var(--ink)}
+.confirm .cta{width:100%;margin-top:20px;cursor:pointer;font-family:inherit}
+@keyframes cf{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.confirm{animation:none}}

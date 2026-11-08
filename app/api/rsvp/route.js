@@ -9,14 +9,16 @@ export async function POST(req) {
   const nom = String(b.nom || '').trim().slice(0, 120);
   const presence = b.presence === 'non' ? 'non' : 'oui';
   const personnes = presence === 'oui' ? Math.min(6, Math.max(1, parseInt(b.personnes, 10) || 1)) : 0;
+  const telephone = String(b.telephone || '').replace(/[^\d+ ]/g, '').trim().slice(0, 30);
   if (!nom) return json({ error: 'Nom requis' }, 400);
+  if (telephone.replace(/\D/g, '').length < 8) return json({ error: 'Téléphone invalide' }, 400);
   const c = await db();
   // Une réponse par nom : la dernière remplace la précédente.
   const ex = await c.execute({ sql: 'SELECT id FROM rsvp WHERE lower(nom) = lower(?)', args: [nom] });
   if (ex.rows.length) {
-    await c.execute({ sql: "UPDATE rsvp SET presence=?, personnes=?, created_at=datetime('now') WHERE id=?", args: [presence, personnes, ex.rows[0].id] });
+    await c.execute({ sql: "UPDATE rsvp SET presence=?, personnes=?, telephone=?, created_at=datetime('now') WHERE id=?", args: [presence, personnes, telephone, ex.rows[0].id] });
   } else {
-    await c.execute({ sql: 'INSERT INTO rsvp (nom, presence, personnes) VALUES (?,?,?)', args: [nom, presence, personnes] });
+    await c.execute({ sql: 'INSERT INTO rsvp (nom, presence, personnes, telephone) VALUES (?,?,?,?)', args: [nom, presence, personnes, telephone] });
   }
   return json({ ok: true });
 }
@@ -24,7 +26,7 @@ export async function POST(req) {
 export async function GET(req) {
   if (!isAdmin(req)) return json({ error: 'Non autorisé' }, 401);
   const c = await db();
-  const r = await c.execute('SELECT id, nom, presence, personnes, created_at FROM rsvp ORDER BY created_at DESC');
+  const r = await c.execute('SELECT id, nom, telephone, presence, personnes, created_at FROM rsvp ORDER BY created_at DESC');
   return json({ rows: r.rows.map(x => ({ ...x })), persistent: persistent() });
 }
 

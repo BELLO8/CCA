@@ -39,7 +39,7 @@ export default function Admin() {
 
   const csv = () => {
     const esc = s => `"${String(s).replace(/"/g, '""')}"`;
-    const lines = [['Nom', 'Présence', 'Personnes', 'Date'], ...rows.map(r => [r.nom, r.presence, r.personnes, r.created_at])];
+    const lines = [['Nom', 'Téléphone', 'Présence', 'Personnes', 'Date'], ...rows.map(r => [r.nom, r.telephone || '', r.presence, r.personnes, r.created_at])];
     const blob = new Blob(['﻿' + lines.map(l => l.map(esc).join(';')).join('\n')], { type: 'text/csv;charset=utf-8' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'invites-augustin-ayoni.csv'; a.click();
   };
@@ -81,7 +81,7 @@ export default function Admin() {
         {shown.length === 0 && <p className="empty">Aucune réponse pour le moment.</p>}
         {shown.map(r => (
           <div className="row" key={r.id}>
-            <div><span className="n">{r.nom}</span><small>{fmt(r.created_at)}</small></div>
+            <div><span className="n">{r.nom}</span><small>{r.telephone ? <><a href={'tel:' + r.telephone.replace(/\s/g, '')} style={{ color: 'inherit' }}>{r.telephone}</a> · </> : null}{fmt(r.created_at)}</small></div>
             <span className={'pill ' + r.presence}>{r.presence === 'oui' ? `${r.personnes} pers.` : 'Absent'}</span>
             <button className="del" title="Supprimer" aria-label={`Supprimer ${r.nom}`} onClick={() => del(r)}>×</button>
           </div>

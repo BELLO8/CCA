@@ -1,8 +1,6 @@
 'use client';
 import { useEffect, useRef, useState } from 'react';
 
-const WHATSAPP = '2250777442882';
-
 function Envelope() {
   const [open, setOpen] = useState(false);
   const [gone, setGone] = useState(false);
@@ -47,28 +45,50 @@ function Reveal({ as: Tag = 'section', className = '', children, ...rest }) {
 
 function Rsvp() {
   const [nom, setNom] = useState('');
+  const [tel, setTel] = useState('');
   const [v, setV] = useState('oui');
   const [nb, setNb] = useState('1');
   const [err, setErr] = useState('');
   const [sent, setSent] = useState(false);
+  const [busy, setBusy] = useState(false);
   const n = nom.trim();
-  const text = v === 'oui'
-    ? `Bonjour, c’est ${n}. Je confirme ma présence au mariage d’Augustin et Ayoni le 19 décembre 2026 (${nb} personne${nb > 1 ? 's' : ''}). Avec joie !`
-    : `Bonjour, c’est ${n}. Je suis désolé(e), je ne pourrai pas être présent(e) au mariage d’Augustin et Ayoni le 19 décembre 2026. Tous mes vœux de bonheur !`;
-  const href = `https://wa.me/${WHATSAPP}?text=${encodeURIComponent(text)}`;
 
-  const onSend = e => {
-    if (!n) { e.preventDefault(); setErr('Merci d’indiquer votre nom.'); document.getElementById('nom').focus(); return; }
-    // Enregistre la réponse en base, puis le lien ouvre WhatsApp (comportement d’origine).
-    fetch('/api/rsvp', { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nom: n, presence: v, personnes: Number(nb) }) })
-      .then(r => { if (r.ok) setSent(true); }).catch(() => {});
+  const onSend = async e => {
+    e.preventDefault();
+    if (!n) { setErr('Merci d’indiquer votre nom.'); document.getElementById('nom').focus(); return; }
+    if (tel.replace(/\D/g, '').length < 8) { setErr('Merci d’indiquer un numéro de téléphone valide.'); document.getElementById('tel').focus(); return; }
+    setBusy(true);
+    try {
+      const r = await fetch('/api/rsvp', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nom: n, telephone: tel.trim(), presence: v, personnes: Number(nb) }) });
+      if (r.ok) setSent({ nom: n, presence: v, personnes: Number(nb) });
+      else setErr((await r.json().catch(() => ({}))).error || 'Une erreur est survenue, merci de réessayer.');
+    } catch { setErr('Connexion impossible, merci de réessayer.'); }
+    setBusy(false);
   };
 
+  if (sent) return (
+    <div className="confirm" role="status">
+      <div className="orn">◆</div>
+      {sent.presence === 'oui' ? <>
+        <h3 className="serif">Merci {sent.nom} !</h3>
+        <p>Votre présence est bien confirmée{sent.personnes > 1 ? ` pour ${sent.personnes} personnes` : ''}.</p>
+        <p>Nous avons hâte de célébrer avec vous le <b>samedi 19 décembre 2026</b>.</p>
+      </> : <>
+        <h3 className="serif">Merci {sent.nom}</h3>
+        <p>Nous avons bien noté que vous ne pourrez pas être des nôtres.</p>
+        <p>Vous serez dans nos pensées en ce jour si spécial.</p>
+      </>}
+      <button type="button" className="cta ghost" onClick={() => setSent(false)}>Modifier ma réponse</button>
+    </div>
+  );
+
   return (
-    <form onSubmit={e => e.preventDefault()}>
+    <form onSubmit={onSend}>
       <div><label htmlFor="nom">Votre nom complet</label>
         <input id="nom" autoComplete="name" placeholder="Ex : Kouamé Aya" value={nom} onChange={e => { setNom(e.target.value); setErr(''); setSent(false); }} /></div>
+      <div><label htmlFor="tel">Numéro de téléphone</label>
+        <input id="tel" type="tel" inputMode="tel" autoComplete="tel" placeholder="Ex : 07 00 00 00 00" value={tel} onChange={e => { setTel(e.target.value); setErr(''); setSent(false); }} /></div>
       <div><label>Serez-vous des nôtres ?</label>
         <div className="choice">
           <button type="button" aria-pressed={v === 'oui'} onClick={() => { setV('oui'); setSent(false); }}>Avec joie</button>
@@ -79,9 +99,7 @@ function Rsvp() {
           {[1, 2, 3, 4, 5, 6].map(i => <option key={i}>{i}</option>)}
         </select></div>}
       <p className="err" role="alert">{err}</p>
-      <a className="cta" href={href} target="_blank" rel="noopener" onClick={onSend}>Envoyer ma réponse</a>
-      {sent ? <p className="ok">Merci ! Votre réponse a bien été enregistrée.</p>
-        : <p style={{ fontSize: 12, color: 'var(--muted)', textAlign: 'center', margin: 0 }}>Votre réponse sera enregistrée et envoyée par WhatsApp aux mariés.</p>}
+      <button className="cta" type="submit" disabled={busy} style={{ width: '100%', border: 0, cursor: 'pointer', fontFamily: 'inherit', opacity: busy ? .6 : 1 }}>{busy ? 'Envoi…' : 'Envoyer ma réponse'}</button>
     </form>
   );
 }
